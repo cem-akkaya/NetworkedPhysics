@@ -102,6 +102,10 @@
 		{
 			"Name": "LearningAgents",
 			"Enabled": true
+		},
+		{
+			"Name": "GameplayGraph",
+			"Enabled": true
 		}
 	]
 }
