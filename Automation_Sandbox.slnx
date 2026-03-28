@@ -46,6 +46,7 @@
   <Project Path="../UnrealEngine/Engine/Source/Programs/AutomationTool/Localization/Localization.Automation.csproj" />
   <Project Path="../UnrealEngine/Engine/Source/Programs/AutomationTool/LowLevelTests/LowLevelTests.Automation.csproj" />
   <Project Path="../UnrealEngine/Engine/Source/Programs/AutomationTool/Mac/Mac.Automation.csproj" />
+  <Project Path="../UnrealEngine/Engine/Source/Programs/AutomationTool/Microsoft/Microsoft.Automation.csproj" />
   <Project Path="../UnrealEngine/Engine/Source/Programs/AutomationTool/Mutable/Mutable.Automation.csproj" />
   <Project Path="../UnrealEngine/Engine/Source/Programs/AutomationTool/OneSkyLocalization/OneSkyLocalization.Automation.csproj" />
   <Project Path="../UnrealEngine/Engine/Source/Programs/AutomationTool/Scripts/AutomationScripts.Automation.csproj" />
