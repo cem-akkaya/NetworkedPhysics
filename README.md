@@ -1,23 +1,32 @@
-﻿# Networked Physics – Chaos Modular Vehicle & Async Physics (UE5.7)
+﻿# Networked Physics – Chaos Modular Vehicle & Async Physics (UE 5.8)
+
+This is my place for intense experimentation with Unreal physics. I follow engine updates, work through tutorials, and push those ideas into vehicles and network conditions that expose the hard parts of the simulation. I like tracing a behavior from Blueprint through C++ into Chaos, breaking assumptions, tuning the result, and coming back with a better understanding of how the engine works. This project is where I keep doing that and sharpening my skills.
 
 > **Important Note**  
-> This project is built using a **custom Unreal Engine 5.7 source build** with **engine-level modifications and extensions** applied. Several systems showcased here rely on changes made directly to the engine source, particularly around Chaos Physics, Modular Vehicles, and asynchronous simulation behavior that you can find in my repository.
+> This project currently targets a **custom Unreal Engine 5.8.0 source build**. The project code and assets are in this repository; the engine-side work is in my [Unreal Engine fork](https://github.com/cem-akkaya/UnrealEngine). Access to Unreal Engine source on GitHub requires an [Epic-linked GitHub account](https://dev.epicgames.com/documentation/en-us/unreal-engine/downloading-source-code-in-unreal-engine).
 
 <img src="https://raw.githubusercontent.com/cem-akkaya/NetworkedPhysics/refs/heads/master/Source/5.gif" alt="networked-physics-splash" width="100%"/>
 
 ## About This Project
 
-This project serves as a technical showcase for **Advanced Networked Physics** and the **Chaos Modular Vehicle** system in Unreal Engine 5.7. It is built upon the foundational concepts from the [Networked Physics Pawn Tutorial](https://dev.epicgames.com/community/learning/tutorials/MoBq/unreal-engine-networked-physics-pawn-tutorial) by the original developer, extending those principles into a complex modular vehicle environment.
+The experiments focus on **advanced networked physics** and **Chaos Modular Vehicle** in Unreal Engine 5.8. They build on ideas from the [Networked Physics Pawn Tutorial](https://dev.epicgames.com/community/learning/tutorials/MoBq/unreal-engine-networked-physics-pawn-tutorial), then push them into more complex modular vehicles and multi-body setups.
 
-The primary focus of this repository is the practical implementation and sophisticated extension of these systems, specifically:
+The experiments keep coming back to three areas:
+
 - **Modular Vehicle Evolution**: Pushing the boundaries of the experimental Chaos Modular Vehicle plugin through custom C++ sub-modules.
 - **Physics-Driven Mechanics**: Implementing real-world mechanical behaviors (like hydraulic arms and buckets) directly within the Physics Thread.
 - **Networked Precision**: Investigating and solving the complexities of asynchronous physics synchronization in high-latency environments.
 
-### A Deep Dive into Chaos Physics
-This project is an ongoing learning endeavor and a work in progress, evolving as I delve deeper into the complexities of real-time simulation. While the fundamental principles of physics are long-standing laws of nature, their implementation within a highly sophisticated, networked, and asynchronous engine architecture is a modern challenge.
+### Project and Engine Changes
 
-Beyond a simple showcase, this project represents my personal journey into the "under-the-hood" world of Unreal's physics engine. It is an active playground for understanding:
+The [NetworkedPhysics repository](https://github.com/cem-akkaya/NetworkedPhysics) contains the vehicle code, Blueprints, levels, and gameplay experiments. The [Unreal Engine fork](https://github.com/cem-akkaya/UnrealEngine) is the companion history for changes made inside Chaos Physics and Chaos Modular Vehicle. Together they show both the engine behavior and how the project uses it.
+
+The [Pod Racer speed-scaling branch](https://github.com/cem-akkaya/NetworkedPhysics/tree/podracer-speed-scaling) shows this relationship in practice. Its history records [runtime chassis drag-area control](https://github.com/cem-akkaya/NetworkedPhysics/commit/a65ca33ed3bc630b933dfd1b26e2a542520a827a), [runtime aerofoil adjustment](https://github.com/cem-akkaya/NetworkedPhysics/commit/af9cc8814a9d03739a19a3b86fcfe56a1ccc0bf1), and [drag and lift multiplier changes](https://github.com/cem-akkaya/NetworkedPhysics/commit/40d6ad41cb22b213cbbab059b42d22d1b0f94114). Those commits contain Blueprint and level changes and describe engine experiments, but they do not contain the engine C++ changes. Runtime aerodynamic setters are now being moved into [project code](Source/NetworkedPhysics/VehicleAerodynamicsLibrary.cpp).
+
+### A Deep Dive into Chaos Physics
+
+Each vehicle gives me a different way to investigate what happens under the hood:
+
 - **Low-Level Simulation**: Deciphering the interaction between Game Thread inputs and Physics Thread execution.
 - **Structural Integrity**: Investigating how hierarchical simulation trees maintain stability under stress.
 - **Experimental Boundaries**: Testing the limits of the new Modular Vehicle architecture to bridge the gap between "standard" vehicle sims and complex industrial machinery.
@@ -28,7 +37,7 @@ Beyond a simple showcase, this project represents my personal journey into the "
 
 ### 1. Pod Racer (Experimental Multi-Body Physics Vehicle)
 
-The Pod Racer is an experimental, high-velocity vehicle setup designed to explore **force-driven, multi-body physics behavior** under extreme conditions. Unlike the Loader and Mining Truck, this vehicle does **not** rely on the Chaos Modular Vehicle framework. Instead, it is built entirely from independently simulated physics bodies connected through carefully tuned soft constraints.
+The Pod Racer is an experimental, high-velocity vehicle setup designed to explore **force-driven, multi-body physics behavior** under extreme conditions. Its cockpit and two thrusters remain separate simulated bodies joined by soft constraints, while the thrusters use Chaos Modular Vehicle cluster actors and simulation components. This lets the vehicle draw on modular simulation without becoming a conventional single-body vehicle.
 
 <img src="https://raw.githubusercontent.com/cem-akkaya/NetworkedPhysics/refs/heads/master/Source/6.gif" alt="networked-physics-splash" width="100%"/>
 
@@ -47,9 +56,9 @@ The Pod Racer exists as a **physics and gameplay experiment**, focusing on:
 - Multi-body force interaction at high velocity
 - Stability and constraint behavior under stress
 - Balancing realism with readable, skill-based control
-- Exploring the limits of networked async physics outside traditional vehicle abstractions
+- Exploring the limits of networked async physics with a multi-body modular vehicle
 
-This pawn serves as a contrast case to the Chaos Modular Vehicles in this repository, demonstrating a different approach to complex vehicle simulation where behavior emerges primarily from force balance and constraint tuning rather than predefined vehicle models.
+The Pod Racer complements the Loader and Mining Truck experiments: its behavior emerges from forces shared across separate bodies and their constraints, alongside modular suspension and aerodynamic simulation.
 
 ### 2. Loader Truck (LoaderPawn)
 The `ALoaderPawn` demonstrates a significant extension of the Chaos Modular Vehicle architecture through specialized mechanical systems.
