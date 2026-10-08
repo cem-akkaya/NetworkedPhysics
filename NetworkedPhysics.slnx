@@ -1,0 +1,234 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Debug Client" />
+    <BuildType Name="Debug Editor" />
+    <BuildType Name="Debug Server" />
+    <BuildType Name="DebugGame" />
+    <BuildType Name="DebugGame Client" />
+    <BuildType Name="DebugGame Editor" />
+    <BuildType Name="DebugGame Server" />
+    <BuildType Name="Development" />
+    <BuildType Name="Development Client" />
+    <BuildType Name="Development Editor" />
+    <BuildType Name="Development Server" />
+    <BuildType Name="Shipping" />
+    <BuildType Name="Shipping Client" />
+    <BuildType Name="Shipping Server" />
+    <BuildType Name="Test" />
+    <BuildType Name="Test Client" />
+    <BuildType Name="Test Server" />
+    <Platform Name="IOS" />
+    <Platform Name="Mac" />
+    <Platform Name="TVOS" />
+    <Platform Name="Win64" />
+    <Platform Name="Win64-arm64" />
+    <Platform Name="Win64-arm64ec" />
+  </Configurations>
+  <Folder Name="/Engine/">
+    <Project Path="Intermediate/ProjectFiles/UE5.vcxproj" Id="b0510a4f-9a86-3997-9821-9c6aeeef6d9e">
+      <BuildType Solution="Debug Client|IOS" Project="IOS_Debug_Client" />
+      <BuildType Solution="Debug Client|Mac" Project="Mac_Debug_Client" />
+      <BuildType Solution="Debug Client|TVOS" Project="TVOS_Debug_Client" />
+      <BuildType Solution="Debug Client|Win64" Project="Debug_Client" />
+      <BuildType Solution="Debug Client|Win64-arm64" Project="Win64_arm64_Debug_Client" />
+      <BuildType Solution="Debug Client|Win64-arm64ec" Project="Win64_arm64ec_Debug_Client" />
+      <BuildType Solution="Debug Editor|IOS" Project="Invalid" />
+      <BuildType Solution="Debug Editor|Mac" Project="Mac_Debug_Editor" />
+      <BuildType Solution="Debug Editor|TVOS" Project="Invalid" />
+      <BuildType Solution="Debug Editor|Win64" Project="Debug_Editor" />
+      <BuildType Solution="Debug Editor|Win64-arm64" Project="Win64_arm64_Debug_Editor" />
+      <BuildType Solution="Debug Editor|Win64-arm64ec" Project="Win64_arm64ec_Debug_Editor" />
+      <BuildType Solution="Debug Server|IOS" Project="Invalid" />
+      <BuildType Solution="Debug Server|Mac" Project="Mac_Debug_Server" />
+      <BuildType Solution="Debug Server|TVOS" Project="Invalid" />
+      <BuildType Solution="Debug Server|Win64" Project="Debug_Server" />
+      <BuildType Solution="Debug Server|Win64-arm64" Project="Win64_arm64_Debug_Server" />
+      <BuildType Solution="Debug Server|Win64-arm64ec" Project="Win64_arm64ec_Debug_Server" />
+      <BuildType Solution="DebugGame Client|IOS" Project="IOS_DebugGame_Client" />
+      <BuildType Solution="DebugGame Client|Mac" Project="Mac_DebugGame_Client" />
+      <BuildType Solution="DebugGame Client|TVOS" Project="TVOS_DebugGame_Client" />
+      <BuildType Solution="DebugGame Client|Win64" Project="DebugGame_Client" />
+      <BuildType Solution="DebugGame Client|Win64-arm64" Project="Win64_arm64_DebugGame_Client" />
+      <BuildType Solution="DebugGame Client|Win64-arm64ec" Project="Win64_arm64ec_DebugGame_Client" />
+      <BuildType Solution="DebugGame Editor|IOS" Project="Invalid" />
+      <BuildType Solution="DebugGame Editor|Mac" Project="Mac_DebugGame_Editor" />
+      <BuildType Solution="DebugGame Editor|TVOS" Project="Invalid" />
+      <BuildType Solution="DebugGame Editor|Win64" Project="DebugGame_Editor" />
+      <BuildType Solution="DebugGame Editor|Win64-arm64" Project="Win64_arm64_DebugGame_Editor" />
+      <BuildType Solution="DebugGame Editor|Win64-arm64ec" Project="Win64_arm64ec_DebugGame_Editor" />
+      <BuildType Solution="DebugGame Server|IOS" Project="Invalid" />
+      <BuildType Solution="DebugGame Server|Mac" Project="Mac_DebugGame_Server" />
+      <BuildType Solution="DebugGame Server|TVOS" Project="Invalid" />
+      <BuildType Solution="DebugGame Server|Win64" Project="DebugGame_Server" />
+      <BuildType Solution="DebugGame Server|Win64-arm64" Project="Win64_arm64_DebugGame_Server" />
+      <BuildType Solution="DebugGame Server|Win64-arm64ec" Project="Win64_arm64ec_DebugGame_Server" />
+      <BuildType Solution="DebugGame|IOS" Project="IOS_DebugGame" />
+      <BuildType Solution="DebugGame|Mac" Project="Mac_DebugGame" />
+      <BuildType Solution="DebugGame|TVOS" Project="TVOS_DebugGame" />
+      <BuildType Solution="DebugGame|Win64-arm64" Project="Win64_arm64_DebugGame" />
+      <BuildType Solution="DebugGame|Win64-arm64ec" Project="Win64_arm64ec_DebugGame" />
+      <BuildType Solution="Debug|IOS" Project="IOS_Debug" />
+      <BuildType Solution="Debug|Mac" Project="Mac_Debug" />
+      <BuildType Solution="Debug|TVOS" Project="TVOS_Debug" />
+      <BuildType Solution="Debug|Win64-arm64" Project="Win64_arm64_Debug" />
+      <BuildType Solution="Debug|Win64-arm64ec" Project="Win64_arm64ec_Debug" />
+      <BuildType Solution="Development Client|IOS" Project="IOS_Development_Client" />
+      <BuildType Solution="Development Client|Mac" Project="Mac_Development_Client" />
+      <BuildType Solution="Development Client|TVOS" Project="TVOS_Development_Client" />
+      <BuildType Solution="Development Client|Win64" Project="Development_Client" />
+      <BuildType Solution="Development Client|Win64-arm64" Project="Win64_arm64_Development_Client" />
+      <BuildType Solution="Development Client|Win64-arm64ec" Project="Win64_arm64ec_Development_Client" />
+      <BuildType Solution="Development Editor|IOS" Project="Invalid" />
+      <BuildType Solution="Development Editor|Mac" Project="Mac_Development_Editor" />
+      <BuildType Solution="Development Editor|TVOS" Project="Invalid" />
+      <BuildType Solution="Development Editor|Win64" Project="Development_Editor" />
+      <BuildType Solution="Development Editor|Win64-arm64" Project="Win64_arm64_Development_Editor" />
+      <BuildType Solution="Development Editor|Win64-arm64ec" Project="Win64_arm64ec_Development_Editor" />
+      <BuildType Solution="Development Server|IOS" Project="Invalid" />
+      <BuildType Solution="Development Server|Mac" Project="Mac_Development_Server" />
+      <BuildType Solution="Development Server|TVOS" Project="Invalid" />
+      <BuildType Solution="Development Server|Win64" Project="Development_Server" />
+      <BuildType Solution="Development Server|Win64-arm64" Project="Win64_arm64_Development_Server" />
+      <BuildType Solution="Development Server|Win64-arm64ec" Project="Win64_arm64ec_Development_Server" />
+      <BuildType Solution="Development|IOS" Project="IOS_Development" />
+      <BuildType Solution="Development|Mac" Project="Mac_Development" />
+      <BuildType Solution="Development|TVOS" Project="TVOS_Development" />
+      <BuildType Solution="Development|Win64-arm64" Project="Win64_arm64_Development" />
+      <BuildType Solution="Development|Win64-arm64ec" Project="Win64_arm64ec_Development" />
+      <BuildType Solution="Shipping Client|IOS" Project="IOS_Shipping_Client" />
+      <BuildType Solution="Shipping Client|Mac" Project="Mac_Shipping_Client" />
+      <BuildType Solution="Shipping Client|TVOS" Project="TVOS_Shipping_Client" />
+      <BuildType Solution="Shipping Client|Win64" Project="Shipping_Client" />
+      <BuildType Solution="Shipping Client|Win64-arm64" Project="Win64_arm64_Shipping_Client" />
+      <BuildType Solution="Shipping Client|Win64-arm64ec" Project="Win64_arm64ec_Shipping_Client" />
+      <BuildType Solution="Shipping Server|IOS" Project="Invalid" />
+      <BuildType Solution="Shipping Server|Mac" Project="Mac_Shipping_Server" />
+      <BuildType Solution="Shipping Server|TVOS" Project="Invalid" />
+      <BuildType Solution="Shipping Server|Win64" Project="Shipping_Server" />
+      <BuildType Solution="Shipping Server|Win64-arm64" Project="Win64_arm64_Shipping_Server" />
+      <BuildType Solution="Shipping Server|Win64-arm64ec" Project="Win64_arm64ec_Shipping_Server" />
+      <BuildType Solution="Shipping|IOS" Project="IOS_Shipping" />
+      <BuildType Solution="Shipping|Mac" Project="Mac_Shipping" />
+      <BuildType Solution="Shipping|TVOS" Project="TVOS_Shipping" />
+      <BuildType Solution="Shipping|Win64-arm64" Project="Win64_arm64_Shipping" />
+      <BuildType Solution="Shipping|Win64-arm64ec" Project="Win64_arm64ec_Shipping" />
+      <BuildType Solution="Test Client|IOS" Project="IOS_Test_Client" />
+      <BuildType Solution="Test Client|Mac" Project="Mac_Test_Client" />
+      <BuildType Solution="Test Client|TVOS" Project="TVOS_Test_Client" />
+      <BuildType Solution="Test Client|Win64" Project="Test_Client" />
+      <BuildType Solution="Test Client|Win64-arm64" Project="Win64_arm64_Test_Client" />
+      <BuildType Solution="Test Client|Win64-arm64ec" Project="Win64_arm64ec_Test_Client" />
+      <BuildType Solution="Test Server|IOS" Project="Invalid" />
+      <BuildType Solution="Test Server|Mac" Project="Mac_Test_Server" />
+      <BuildType Solution="Test Server|TVOS" Project="Invalid" />
+      <BuildType Solution="Test Server|Win64" Project="Test_Server" />
+      <BuildType Solution="Test Server|Win64-arm64" Project="Win64_arm64_Test_Server" />
+      <BuildType Solution="Test Server|Win64-arm64ec" Project="Win64_arm64ec_Test_Server" />
+      <BuildType Solution="Test|IOS" Project="IOS_Test" />
+      <BuildType Solution="Test|Mac" Project="Mac_Test" />
+      <BuildType Solution="Test|TVOS" Project="TVOS_Test" />
+      <BuildType Solution="Test|Win64-arm64" Project="Win64_arm64_Test" />
+      <BuildType Solution="Test|Win64-arm64ec" Project="Win64_arm64ec_Test" />
+      <Platform Project="x64" />
+      <Build Solution="Debug Editor|IOS" Project="false" />
+      <Build Solution="Debug Editor|TVOS" Project="false" />
+      <Build Solution="Debug Server|IOS" Project="false" />
+      <Build Solution="Debug Server|TVOS" Project="false" />
+      <Build Solution="DebugGame Editor|IOS" Project="false" />
+      <Build Solution="DebugGame Editor|TVOS" Project="false" />
+      <Build Solution="DebugGame Server|IOS" Project="false" />
+      <Build Solution="DebugGame Server|TVOS" Project="false" />
+      <Build Solution="Development Editor|IOS" Project="false" />
+      <Build Solution="Development Editor|TVOS" Project="false" />
+      <Build Solution="Development Server|IOS" Project="false" />
+      <Build Solution="Development Server|TVOS" Project="false" />
+      <Build Solution="Shipping Server|IOS" Project="false" />
+      <Build Solution="Shipping Server|TVOS" Project="false" />
+      <Build Solution="Test Server|IOS" Project="false" />
+      <Build Solution="Test Server|TVOS" Project="false" />
+    </Project>
+  </Folder>
+  <Folder Name="/Games/">
+    <Project Path="Intermediate/ProjectFiles/NetworkedPhysics.vcxproj" Id="b53e8712-e734-3e37-8138-5bcabbee9f19">
+      <BuildType Solution="Debug Client|*" Project="Invalid" />
+      <BuildType Solution="Debug Editor|IOS" Project="Invalid" />
+      <BuildType Solution="Debug Editor|Mac" Project="Mac_Debug_Editor" />
+      <BuildType Solution="Debug Editor|TVOS" Project="Invalid" />
+      <BuildType Solution="Debug Editor|Win64" Project="Debug_Editor" />
+      <BuildType Solution="Debug Editor|Win64-arm64" Project="Win64_arm64_Debug_Editor" />
+      <BuildType Solution="Debug Editor|Win64-arm64ec" Project="Win64_arm64ec_Debug_Editor" />
+      <BuildType Solution="Debug Server|*" Project="Invalid" />
+      <BuildType Solution="DebugGame Client|*" Project="Invalid" />
+      <BuildType Solution="DebugGame Editor|IOS" Project="Invalid" />
+      <BuildType Solution="DebugGame Editor|Mac" Project="Mac_DebugGame_Editor" />
+      <BuildType Solution="DebugGame Editor|TVOS" Project="Invalid" />
+      <BuildType Solution="DebugGame Editor|Win64" Project="DebugGame_Editor" />
+      <BuildType Solution="DebugGame Editor|Win64-arm64" Project="Win64_arm64_DebugGame_Editor" />
+      <BuildType Solution="DebugGame Editor|Win64-arm64ec" Project="Win64_arm64ec_DebugGame_Editor" />
+      <BuildType Solution="DebugGame Server|*" Project="Invalid" />
+      <BuildType Solution="DebugGame|IOS" Project="IOS_DebugGame" />
+      <BuildType Solution="DebugGame|Mac" Project="Mac_DebugGame" />
+      <BuildType Solution="DebugGame|TVOS" Project="TVOS_DebugGame" />
+      <BuildType Solution="DebugGame|Win64-arm64" Project="Win64_arm64_DebugGame" />
+      <BuildType Solution="DebugGame|Win64-arm64ec" Project="Win64_arm64ec_DebugGame" />
+      <BuildType Solution="Debug|IOS" Project="IOS_Debug" />
+      <BuildType Solution="Debug|Mac" Project="Mac_Debug" />
+      <BuildType Solution="Debug|TVOS" Project="TVOS_Debug" />
+      <BuildType Solution="Debug|Win64-arm64" Project="Win64_arm64_Debug" />
+      <BuildType Solution="Debug|Win64-arm64ec" Project="Win64_arm64ec_Debug" />
+      <BuildType Solution="Development Client|*" Project="Invalid" />
+      <BuildType Solution="Development Editor|IOS" Project="Invalid" />
+      <BuildType Solution="Development Editor|Mac" Project="Mac_Development_Editor" />
+      <BuildType Solution="Development Editor|TVOS" Project="Invalid" />
+      <BuildType Solution="Development Editor|Win64" Project="Development_Editor" />
+      <BuildType Solution="Development Editor|Win64-arm64" Project="Win64_arm64_Development_Editor" />
+      <BuildType Solution="Development Editor|Win64-arm64ec" Project="Win64_arm64ec_Development_Editor" />
+      <BuildType Solution="Development Server|*" Project="Invalid" />
+      <BuildType Solution="Development|IOS" Project="IOS_Development" />
+      <BuildType Solution="Development|Mac" Project="Mac_Development" />
+      <BuildType Solution="Development|TVOS" Project="TVOS_Development" />
+      <BuildType Solution="Development|Win64-arm64" Project="Win64_arm64_Development" />
+      <BuildType Solution="Development|Win64-arm64ec" Project="Win64_arm64ec_Development" />
+      <BuildType Solution="Shipping Client|*" Project="Invalid" />
+      <BuildType Solution="Shipping Server|*" Project="Invalid" />
+      <BuildType Solution="Shipping|IOS" Project="IOS_Shipping" />
+      <BuildType Solution="Shipping|Mac" Project="Mac_Shipping" />
+      <BuildType Solution="Shipping|TVOS" Project="TVOS_Shipping" />
+      <BuildType Solution="Shipping|Win64-arm64" Project="Win64_arm64_Shipping" />
+      <BuildType Solution="Shipping|Win64-arm64ec" Project="Win64_arm64ec_Shipping" />
+      <BuildType Solution="Test Client|*" Project="Invalid" />
+      <BuildType Solution="Test Server|*" Project="Invalid" />
+      <BuildType Solution="Test|IOS" Project="IOS_Test" />
+      <BuildType Solution="Test|Mac" Project="Mac_Test" />
+      <BuildType Solution="Test|TVOS" Project="TVOS_Test" />
+      <BuildType Solution="Test|Win64-arm64" Project="Win64_arm64_Test" />
+      <BuildType Solution="Test|Win64-arm64ec" Project="Win64_arm64ec_Test" />
+      <Platform Project="x64" />
+      <Build Solution="Debug Client|*" Project="false" />
+      <Build Solution="Debug Editor|IOS" Project="false" />
+      <Build Solution="Debug Editor|TVOS" Project="false" />
+      <Build Solution="Debug Server|*" Project="false" />
+      <Build Solution="DebugGame Client|*" Project="false" />
+      <Build Solution="DebugGame Editor|IOS" Project="false" />
+      <Build Solution="DebugGame Editor|TVOS" Project="false" />
+      <Build Solution="DebugGame Server|*" Project="false" />
+      <Build Solution="Development Client|*" Project="false" />
+      <Build Solution="Development Editor|IOS" Project="false" />
+      <Build Solution="Development Editor|TVOS" Project="false" />
+      <Build Solution="Development Server|*" Project="false" />
+      <Build Solution="Shipping Client|*" Project="false" />
+      <Build Solution="Shipping Server|*" Project="false" />
+      <Build Solution="Test Client|*" Project="false" />
+      <Build Solution="Test Server|*" Project="false" />
+    </Project>
+  </Folder>
+  <Folder Name="/Visualizers/">
+    <File Path="../UnrealEngine/Engine/Extras/VisualStudioDebugging/Unreal.natjmc" />
+    <File Path="../UnrealEngine/Engine/Extras/VisualStudioDebugging/Unreal.natstepfilter" />
+    <File Path="../UnrealEngine/Engine/Extras/VisualStudioDebugging/Unreal.natvis" />
+  </Folder>
+  <Properties Name="ddbf523f-7eb6-4887-bd51-85a714ff87eb">
+    <Property Name="AvailablePlatforms" Value="Win64;Mac;IOS;TVOS" />
+  </Properties>
+</Solution>
