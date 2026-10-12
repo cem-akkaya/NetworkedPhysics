@@ -41,7 +41,7 @@ public:
 
 	// Force we can change in the actor's Details panel.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Force")
-	FVector ApplicationForce = FVector(0.0, 0.0, 1000000);
+	FVector ApplicationForce = FVector(100000000.0f, 100000000.0f, 0.0f);
 
 protected:
 	// Set up the actor when play starts.

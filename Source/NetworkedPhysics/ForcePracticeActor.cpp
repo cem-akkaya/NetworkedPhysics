@@ -3,6 +3,8 @@
 
 #include "ForcePracticeActor.h"
 #include "PBDRigidsSolver.h"
+#include "Chaos/ClusterUnionManager.h"
+#include "Chaos/Particle/ParticleUtilities.h"
 #include "Chaos/PBDRigidsEvolutionGBF.h"
 #include "Physics/Experimental/PhysScene_Chaos.h"
 
@@ -104,15 +106,38 @@ void FForcePracticeAsync::OnPreSimulate_Internal()
 		return;
 	}
 	
+	Chaos::FClusterUnionManager& ClusterUnionManager = Evolution->GetRigidClustering().GetClusterUnionManager();
+
 	//build
 	const Chaos::FAABB3 QueryBounds(Center - BoxExtent, Center + BoxExtent);
 	const Chaos::FVec3 LocalForce = Force;
 
-	Evolution->GetParticles().GetNonDisabledDynamicView().ParallelFor([&QueryBounds, &LocalForce](auto& Particle, int32 Index)
+	Evolution->GetParticles().GetNonDisabledDynamicView().ParallelFor([&QueryBounds, &LocalForce, &ClusterUnionManager](Chaos::FTransientPBDRigidParticleHandle& Particle, int32 Index)
 	{
 		if (QueryBounds.Contains(Particle.GetX()))
 		{
-			Particle.AddForce(LocalForce, true);
+			// Let's try a dash volume for the multi body vehicle
+			// This wouldn't work on my case cause my body is not actually a single rigid body its a multi body makes it chaos movement.
+			//Particle.AddForce(LocalForce * Particle.GetV().GetSafeNormal(), true);
+
+			// a better approach would be to try resolve if this body has a cluster then if it does then we can apply the force to each cluster.
+			if (Chaos::FPBDRigidParticleHandle* ParticleHandle = Particle.Handle()->CastToRigidParticle())
+			{
+				if (Chaos::FClusterUnion* Union = ClusterUnionManager.FindClusterUnionFromParticle(ParticleHandle))
+				{
+					Chaos::FPBDRigidClusteredParticleHandle* Root = Union->InternalCluster;
+					// Now since its root of our object we can do something
+					// That's not even enough since a thruster having a single force on tick would again cause balance problems especially in extreme forces and speeds.
+					// our dash volume should be smart enough to consider whole complex vehicle and apply force on the right place right time.
+					// That can be done however we have to communicate the game thread and resolve actors which is ok but not preferred. instead i will go another approach and make a lazy force in front of the vehicle.
+					// fundamentally achieving same effect with slight delay for now we can a bit experiment.
+					//Root->AddForce(LocalForce * Root->GetV().GetSafeNormal(), true);
+					const Chaos::FVec3 LocalFrontOffset(1000.0, 0.0, 0.0);
+					const Chaos::FVec3 WorldFrontPosition = Chaos::FParticleUtilitiesXR::GetCoMWorldPosition(Root) + Root->GetR().RotateVector(LocalFrontOffset) * Chaos::FVec3(1.0f,1.0f,0.0f) + Chaos::FVec3(0, 0, -200) ;
+					const Chaos::FVec3 DashForce = Root->GetV().GetSafeNormal() * LocalForce.Size();
+					Chaos::FParticleUtilitiesXR::AddForceAtPositionWorld(Root, DashForce, WorldFrontPosition);
+				}
+			}
 		}
 	});
 	
@@ -124,4 +149,3 @@ void FForcePracticeAsync::OnPreSimulate_Internal()
 	// 	}
 	// });
 }
-
