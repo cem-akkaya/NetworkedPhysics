@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Chaos/Core.h"
 #include "Chaos/Declares.h"
 #include "Components/BoxComponent.h"
 #include "Chaos/SimCallbackObject.h"
@@ -39,9 +40,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Force")
 	UBoxComponent* ForceCollisionBox;
 
-	// Force we can change in the actor's Details panel.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Force")
-	FVector ApplicationForce = FVector(100000000.0f, 100000000.0f, 0.0f);
+	// Target increase relative to the horizontal speed when a root enters the box.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Force", meta = (ClampMin = "0.0"))
+	float BoostFraction = 0.35f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Force", meta = (ClampMin = "0.01"))
+	float BoostDuration = 0.4f;
 
 protected:
 	// Set up the actor when play starts.
@@ -69,6 +73,16 @@ class FForcePracticeAsync : public Chaos::TSimCallbackObject<FForcePracticeInput
 	// Declare the properties we want to pass to the physics thread.
 	FVector Center = FVector::ZeroVector;
 	FVector BoxExtent = FVector::ZeroVector;
-	FVector Force = FVector::ZeroVector;
+	Chaos::FReal BoostFraction = 0.0;
+	Chaos::FReal BoostDuration = 0.0;
 	bool bHasData = false;
+
+	struct FBoostState
+	{
+		Chaos::FVec3 EntryVelocity = Chaos::FVec3(0.0, 0.0, 0.0);
+		Chaos::FReal RemainingTime = 0.0;
+	};
+
+	TSet<Chaos::FPBDRigidClusteredParticleHandle*> PreviousInsideRoots;
+	TMap<Chaos::FPBDRigidClusteredParticleHandle*, FBoostState> ActiveBoosts;
 };

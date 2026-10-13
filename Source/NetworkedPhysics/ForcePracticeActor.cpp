@@ -4,7 +4,6 @@
 #include "ForcePracticeActor.h"
 #include "PBDRigidsSolver.h"
 #include "Chaos/ClusterUnionManager.h"
-#include "Chaos/Particle/ParticleUtilities.h"
 #include "Chaos/PBDRigidsEvolutionGBF.h"
 #include "Physics/Experimental/PhysScene_Chaos.h"
 
@@ -47,7 +46,8 @@ void AForcePracticeActor::BeginPlay()
 			// Todo: check how this can be done in output and input.
 			ForcePracticeAsync->Center = BoxBounds.Origin;
 			ForcePracticeAsync->BoxExtent = BoxBounds.BoxExtent;
-			ForcePracticeAsync->Force = ApplicationForce;
+			ForcePracticeAsync->BoostFraction = BoostFraction;
+			ForcePracticeAsync->BoostDuration = BoostDuration;
 			ForcePracticeAsync->bHasData = true;
 		}
 	}
@@ -108,44 +108,71 @@ void FForcePracticeAsync::OnPreSimulate_Internal()
 	
 	Chaos::FClusterUnionManager& ClusterUnionManager = Evolution->GetRigidClustering().GetClusterUnionManager();
 
-	//build
-	const Chaos::FAABB3 QueryBounds(Center - BoxExtent, Center + BoxExtent);
-	const Chaos::FVec3 LocalForce = Force;
-
-	Evolution->GetParticles().GetNonDisabledDynamicView().ParallelFor([&QueryBounds, &LocalForce, &ClusterUnionManager](Chaos::FTransientPBDRigidParticleHandle& Particle, int32 Index)
+	const Chaos::FReal DeltaTime = GetDeltaTime_Internal();
+	if (DeltaTime <= 0.0 || BoostFraction <= 0.0 || BoostDuration <= 0.0)
 	{
-		if (QueryBounds.Contains(Particle.GetX()))
-		{
-			// Let's try a dash volume for the multi body vehicle
-			// This wouldn't work on my case cause my body is not actually a single rigid body its a multi body makes it chaos movement.
-			//Particle.AddForce(LocalForce * Particle.GetV().GetSafeNormal(), true);
+		return;
+	}
 
-			// a better approach would be to try resolve if this body has a cluster then if it does then we can apply the force to each cluster.
-			if (Chaos::FPBDRigidParticleHandle* ParticleHandle = Particle.Handle()->CastToRigidParticle())
+	const Chaos::FAABB3 QueryBounds(Center - BoxExtent, Center + BoxExtent);
+	TSet<Chaos::FPBDRigidClusteredParticleHandle*> ActiveRoots;
+	TSet<Chaos::FPBDRigidClusteredParticleHandle*> InsideRoots;
+
+	// Filter the particles that are inside the query bounds
+	for (Chaos::FTransientPBDRigidParticleHandle& Particle : Evolution->GetParticles().GetNonDisabledDynamicView())
+	{
+		if (Chaos::FPBDRigidParticleHandle* ParticleHandle = Particle.Handle()->CastToRigidParticle())
+		{
+			if (Chaos::FClusterUnion* Union = ClusterUnionManager.FindClusterUnionFromParticle(ParticleHandle))
 			{
-				if (Chaos::FClusterUnion* Union = ClusterUnionManager.FindClusterUnionFromParticle(ParticleHandle))
+				if (Chaos::FPBDRigidClusteredParticleHandle* Root = Union->InternalCluster)
 				{
-					Chaos::FPBDRigidClusteredParticleHandle* Root = Union->InternalCluster;
-					// Now since its root of our object we can do something
-					// That's not even enough since a thruster having a single force on tick would again cause balance problems especially in extreme forces and speeds.
-					// our dash volume should be smart enough to consider whole complex vehicle and apply force on the right place right time.
-					// That can be done however we have to communicate the game thread and resolve actors which is ok but not preferred. instead i will go another approach and make a lazy force in front of the vehicle.
-					// fundamentally achieving same effect with slight delay for now we can a bit experiment.
-					//Root->AddForce(LocalForce * Root->GetV().GetSafeNormal(), true);
-					const Chaos::FVec3 LocalFrontOffset(1000.0, 0.0, 0.0);
-					const Chaos::FVec3 WorldFrontPosition = Chaos::FParticleUtilitiesXR::GetCoMWorldPosition(Root) + Root->GetR().RotateVector(LocalFrontOffset) * Chaos::FVec3(1.0f,1.0f,0.0f) + Chaos::FVec3(0, 0, -200) ;
-					const Chaos::FVec3 DashForce = Root->GetV().GetSafeNormal() * LocalForce.Size();
-					Chaos::FParticleUtilitiesXR::AddForceAtPositionWorld(Root, DashForce, WorldFrontPosition);
+					ActiveRoots.Add(Root);
+					if (QueryBounds.Contains(Particle.GetX()))
+					{
+						InsideRoots.Add(Root);
+					}
 				}
 			}
 		}
-	});
-	
-	// Evolution->ForEachPhysicsParticle([&](Chaos::FPhysicsParticle* Particle)
-	// {
-	// 	if (QueryBounds.Intersects(Particle->GetAABB()))
-	// 	{
-	// 		Particle->AddForceAtLocation(LocalForce, Particle->GetLocation());
-	// 	}
-	// });
+	}
+
+	// for the filtered particles that are inside the query bounds, apply a boost for a limited duration
+	for (Chaos::FPBDRigidClusteredParticleHandle* Root : ActiveRoots)
+	{
+		if (InsideRoots.Contains(Root) && !PreviousInsideRoots.Contains(Root))
+		{
+			const Chaos::FVec3 Velocity = Root->GetV();
+			const Chaos::FVec3 HorizontalVelocity(Velocity.X, Velocity.Y, 0.0);
+			if (HorizontalVelocity.SizeSquared() > UE_SMALL_NUMBER && Root->M() > 0.0)
+			{
+				FBoostState& Boost = ActiveBoosts.FindOrAdd(Root);
+				Boost.EntryVelocity = HorizontalVelocity;
+				Boost.RemainingTime = BoostDuration;
+			}
+		}
+
+		if (FBoostState* Boost = ActiveBoosts.Find(Root))
+		{
+			const Chaos::FReal AppliedTime = FMath::Min(Boost->RemainingTime, DeltaTime);
+			const Chaos::FVec3 DashForce = Boost->EntryVelocity * (Root->M() * BoostFraction / BoostDuration) * (AppliedTime / DeltaTime);
+			Root->AddForce(DashForce, true);
+			Boost->RemainingTime -= AppliedTime;
+			if (Boost->RemainingTime <= UE_SMALL_NUMBER)
+			{
+				ActiveBoosts.Remove(Root);
+			}
+		}
+	}
+
+	// remove boost states for particles that are no longer inside the query bounds, getappaaaaaa
+	for (auto Boost = ActiveBoosts.CreateIterator(); Boost; ++Boost)
+	{
+		if (!ActiveRoots.Contains(Boost.Key()))
+		{
+			Boost.RemoveCurrent();
+		}
+	}
+
+	PreviousInsideRoots = MoveTemp(InsideRoots);
 }
