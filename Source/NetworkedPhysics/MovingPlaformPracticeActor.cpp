@@ -5,6 +5,7 @@
 #include "PhysicsEngine/BodyInstance.h"
 #include "PBDRigidsSolver.h"
 #include "Physics/Experimental/PhysScene_Chaos.h"
+#include "Physics/NetworkPhysicsComponent.h"
 
 #include "Chaos/PhysicsObjectInternalInterface.h"
 #include "Runtime/Experimental/Chaos/Private/Chaos/PhysicsObjectInternal.h"
@@ -83,6 +84,7 @@ void AMovingPlaformPracticeActor::PostInitializeComponents()
 							MovingPlatformAsync->MovingPlatformMoveSpeed = MovingPlatformMoveSpeed;
 							MovingPlatformAsync->MovingPlatformDeltaDistance = MovingPlatformDeltaDistance;
 							MovingPlatformAsync->MovingPlatformMoveDirection = MovingPlatformMoveDirection.GetSafeNormal();
+							MovingPlatformAsync->StartLocation = GetActorLocation();
 						}
 	
 					}
@@ -114,23 +116,31 @@ void FMovingPlatformPhysics::OnPreSimulate_Internal()
 		return;
 	}
 
-	const float CurrentStep = MovingPlatformMoveSpeed * GetDeltaTime_Internal();
-	const float PreviousDistanceTraveled = DistanceTraveled;
-	DistanceTraveled = FMath::Min(DistanceTraveled + CurrentStep, MovingPlatformDeltaDistance);
-	const float EasedStep = 0.5f * MovingPlatformDeltaDistance * (FMath::Cos(PI * PreviousDistanceTraveled / MovingPlatformDeltaDistance) - FMath::Cos(PI * DistanceTraveled / MovingPlatformDeltaDistance));
-
-	const Chaos::FVec3 TargetPosition = RigidHandle->GetX() + MovingPlatformMoveDirection * EasedStep * OscillationDirection;
-	const Chaos::FKinematicTarget DestinationTarget = Chaos::FKinematicTarget::MakePositionTarget(TargetPosition, RigidHandle->GetR());
-	
 	Chaos::FPBDRigidsSolver* CurrentSolver = static_cast<Chaos::FPBDRigidsSolver*>(GetSolver());
-	CurrentSolver->GetEvolution()->SetParticleKinematicTarget(RigidHandle, DestinationTarget);
-	
+	if (!CurrentSolver)
+	{
+		return;
+	}
+
+	const int32 ServerFrame = CurrentSolver->GetCurrentFrame() + UE::NetworkPhysicsUtils::GetNetworkPhysicsTickOffset_Internal(GetSolver());
+	const float CurrentStep = MovingPlatformMoveSpeed * GetSolver()->GetAsyncDeltaTime();
+	DistanceTraveled = FMath::Fmod(ServerFrame * CurrentStep, 2.0f * MovingPlatformDeltaDistance);
+	OscillationDirection = 1;
 	if (DistanceTraveled >= MovingPlatformDeltaDistance)
 	{
-		DistanceTraveled = 0.0f;
+		DistanceTraveled -= MovingPlatformDeltaDistance;
 		OscillationDirection *= -1;
 	}
-	
+
+	float DistanceFromStart = DistanceTraveled;
+	if (OscillationDirection < 0)
+	{
+		DistanceFromStart = MovingPlatformDeltaDistance - DistanceTraveled;
+	}
+
+	const Chaos::FVec3 TargetPosition = StartLocation + MovingPlatformMoveDirection * DistanceFromStart;
+	const Chaos::FKinematicTarget DestinationTarget = Chaos::FKinematicTarget::MakePositionTarget(TargetPosition, RigidHandle->GetR());
+	CurrentSolver->GetEvolution()->SetParticleKinematicTarget(RigidHandle, DestinationTarget);
 }
 
 void FMovingPlatformPhysics::OnPhysicsObjectUnregistered_Internal(Chaos::FConstPhysicsObjectHandle PhysicsObject)

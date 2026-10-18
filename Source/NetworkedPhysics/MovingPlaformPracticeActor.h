@@ -59,11 +59,12 @@ class FMovingPlatformPhysics : public Chaos::TSimCallbackObject<FMovingPlatformI
 {
 	friend AMovingPlaformPracticeActor;
 	
-	float DistanceTraveled  =  0.0f;
+	float DistanceTraveled = 0.0f;
 	int OscillationDirection = 1;
 	float MovingPlatformMoveSpeed = 0.0f;
 	float  MovingPlatformDeltaDistance  = 0.0f;
 	FVector MovingPlatformMoveDirection = FVector::ZeroVector;
+	FVector StartLocation = FVector::ZeroVector;
 
 	
 	Chaos::FConstPhysicsObjectHandle CurrentPhysicsObjectHandle  = nullptr;
