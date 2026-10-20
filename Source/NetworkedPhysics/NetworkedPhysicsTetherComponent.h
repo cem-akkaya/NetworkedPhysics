@@ -73,6 +73,9 @@ class FPhysicsTetherPhysics : public Chaos::TSimCallbackObject<FPhysicsTetherInp
 	TArray<Chaos::FConstPhysicsObjectHandle> CurrentPhysicsObjectHandles;
 	Chaos::FParticlePair TetherPair;
 	
+	Chaos::FPBDJointConstraintHandle* TetherConstraintHandle = nullptr;
+	
+	void DestroyJoint_Internal();
 	virtual void OnPreSimulate_Internal() override;
 	virtual void OnPhysicsObjectUnregistered_Internal(Chaos::FConstPhysicsObjectHandle PhysicsObject) override;
 };

@@ -41,6 +41,8 @@ void UNetworkedPhysicsTetherComponent::EndPlay(const EEndPlayReason::Type EndPla
 			{
 				if (Chaos::FPhysicsSolver* Solver = PhysScene->GetSolver())
 				{
+					FPhysicsTetherPhysics* Async = PhysicsTetherAsync;
+					Solver->EnqueueCommandImmediate([Async]() { Async->DestroyJoint_Internal(); });
 					Solver->UnregisterAndFreeSimCallbackObject_External(PhysicsTetherAsync);
 				}
 			}
@@ -60,11 +62,15 @@ void UNetworkedPhysicsTetherComponent::TryAttachActors()
 		
 		UGameplayStatics::GetAllActorsWithTag(GetWorld(), FirstActorTag, AttachedActorsA);
 		UGameplayStatics::GetAllActorsWithTag(GetWorld(), SecondActorTag, AttachedActorsB);
+		if (AttachedActorsA.Num() != 1 || AttachedActorsB.Num() != 1 || AttachedActorsA[0] == AttachedActorsB[0])
+		{
+			return;
+		}
 		
 		AttachedActors.Append(AttachedActorsA);
 		AttachedActors.Append(AttachedActorsB);
 		
-		if (AttachedActors.Num() > 1)
+		if (AttachedActors.Num() == 2)
 		{
 			TArray<Chaos::FConstPhysicsObjectHandle> PhysicsBodies;
 			 for (AActor* CurrentActor : AttachedActors)
@@ -89,7 +95,7 @@ void UNetworkedPhysicsTetherComponent::TryAttachActors()
 				};
 			}
 
-			if (PhysicsBodies.Num() > 1)
+			if (PhysicsBodies.Num() == 2 && PhysicsBodies[0] != PhysicsBodies[1])
 			{
 				if (UWorld* World = GetWorld())
 				{
@@ -115,6 +121,11 @@ void UNetworkedPhysicsTetherComponent::TryAttachActors()
 void FPhysicsTetherPhysics::OnPreSimulate_Internal()
 {
 	if (CurrentPhysicsObjectHandles.IsEmpty()) 
+	{
+		return;
+	}
+	
+	if (TetherConstraintHandle)
 	{
 		return;
 	}
@@ -153,10 +164,10 @@ void FPhysicsTetherPhysics::OnPreSimulate_Internal()
 		JointSettings.bLinearPositionDriveEnabled = {true, true, true};
 		JointSettings.LinearDrivePositionTarget = TetherPair[1]->GetR().Inverse().RotateVector((TetherPair[0]->GetX() - TetherPair[1]->GetX()).GetSafeNormal() * TetherRestLength);
 		JointSettings.LinearDriveStiffness = Chaos::FVec3(2000.0);
-		JointSettings.LinearDriveDamping = Chaos::FVec3(80.0);
+		JointSettings.LinearDriveDamping = Chaos::FVec3(20.0);
 		JointSettings.LinearDriveMaxForce = Chaos::FVec3(10000000.0);
 		
-		CurrentSolver->GetEvolution()->CreateJointConstraint(TetherPair, JointSettings);
+		TetherConstraintHandle = CurrentSolver->GetEvolution()->CreateJointConstraint(TetherPair, JointSettings);
 	}
 	
 	//const int32 ServerFrame = CurrentSolver->GetCurrentFrame() + UE::NetworkPhysicsUtils::GetNetworkPhysicsTickOffset_Internal(GetSolver());
@@ -164,5 +175,23 @@ void FPhysicsTetherPhysics::OnPreSimulate_Internal()
 
 void FPhysicsTetherPhysics::OnPhysicsObjectUnregistered_Internal(Chaos::FConstPhysicsObjectHandle PhysicsObject)
 {
+	if (CurrentPhysicsObjectHandles.Contains(PhysicsObject))
+	{
+		DestroyJoint_Internal();
+		CurrentPhysicsObjectHandles.Reset();
+	}
+}
+
+void FPhysicsTetherPhysics::DestroyJoint_Internal()
+{
+	if (TetherConstraintHandle)
+	{
+		Chaos::FPBDRigidsSolver* CurrentSolver = static_cast<Chaos::FPBDRigidsSolver*>(GetSolver());
+		if (CurrentSolver)
+		{
+			CurrentSolver->GetEvolution()->DestroyJointConstraint(TetherConstraintHandle);
+			TetherConstraintHandle = nullptr;
+		}
+	}
 }
 
