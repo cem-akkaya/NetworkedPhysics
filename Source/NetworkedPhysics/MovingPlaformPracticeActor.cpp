@@ -1,15 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
-
+#include "MovingPlaformPracticeActor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "PhysicsEngine/BodyInstance.h"
 #include "PBDRigidsSolver.h"
 #include "Physics/Experimental/PhysScene_Chaos.h"
 #include "Physics/NetworkPhysicsComponent.h"
-
 #include "Chaos/PhysicsObjectInternalInterface.h"
 #include "Runtime/Experimental/Chaos/Private/Chaos/PhysicsObjectInternal.h"
-#include "MovingPlaformPracticeActor.h"
 
 
 // Sets default values
