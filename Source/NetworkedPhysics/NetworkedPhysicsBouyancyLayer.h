@@ -33,6 +33,12 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bouyancy Layer")
 	float PerProbeForce = 100.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bouyancy Layer|Probes", meta = (ClampMin = "1.0"))
+	float GridSize = 100.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bouyancy Layer|Probes", meta = (ClampMin = "1", DisplayName = "Probes Per Axis"))
+	int32 GridDimension = 9;
 	
 	FBouyancyLayerPhysics* BouyancyLayerPhysicsAsync = nullptr;
 };
@@ -47,17 +53,22 @@ struct FBouyancyLayerPhysicsOutput : public Chaos::FSimCallbackOutput
 	void Reset() {}
 };
 
-class FBouyancyLayerPhysics : public Chaos::TSimCallbackObject<FBouyancyLayerPhysicsInput, FBouyancyLayerPhysicsOutput,(Chaos::ESimCallbackOptions::Presimulate | Chaos::ESimCallbackOptions::PhysicsObjectUnregister | Chaos::ESimCallbackOptions::ContactModification)>
+class FBouyancyLayerPhysics : public Chaos::TSimCallbackObject<FBouyancyLayerPhysicsInput, FBouyancyLayerPhysicsOutput,(Chaos::ESimCallbackOptions::Presimulate | Chaos::ESimCallbackOptions::PhysicsObjectUnregister | Chaos::ESimCallbackOptions::ContactModification | Chaos::ESimCallbackOptions::Rewind)>
 {
 	friend class ANetworkedPhysicsBouyancyLayer;
 	
 	Chaos::FConstPhysicsObjectHandle CurrentPhysicsObjectHandle = nullptr;
 	float WaterSurfaceZ = 0.0f;
 	float PerProbeForce = 0.0f;
+	float GridSize = 100.0f;
+	int32 GridDimension = 9;
+	// Contacts found after integration are applied as forces on the next physics step.
+	TSet<Chaos::FPBDRigidParticleHandle*> BodiesToBuoy;
 	
-	int32 CountSubmergedProbes(const Chaos::FPBDRigidParticleHandle* LayerBody, const Chaos::FPBDRigidParticleHandle* OtherBody) const;
+	void ApplySubmergedProbeForces(const Chaos::FPBDRigidParticleHandle* LayerBody, Chaos::FPBDRigidParticleHandle* OtherBody) const;
 
 	virtual void OnPreSimulate_Internal() override;
 	virtual void OnContactModification_Internal(Chaos::FCollisionContactModifier& Modifier) override;
 	virtual void OnPhysicsObjectUnregistered_Internal(Chaos::FConstPhysicsObjectHandle PhysicsObject) override;
+	virtual void FirstPreResimStep_Internal(int32 PhysicsStep) override;
 };

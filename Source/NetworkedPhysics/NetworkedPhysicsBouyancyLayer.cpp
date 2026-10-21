@@ -11,23 +11,26 @@
 #include "Chaos/ContactModification.h"
 #include "Chaos/ImplicitObject.h"
 #include "Chaos/ParticleHandle.h"
+#include "Chaos/DebugDrawQueue.h"
 #include "Runtime/Experimental/Chaos/Private/Chaos/PhysicsObjectInternal.h"
 
-int32 FBouyancyLayerPhysics::CountSubmergedProbes(const Chaos::FPBDRigidParticleHandle* LayerBody, const Chaos::FPBDRigidParticleHandle* OtherBody) const
+void FBouyancyLayerPhysics::ApplySubmergedProbeForces(const Chaos::FPBDRigidParticleHandle* LayerBody, Chaos::FPBDRigidParticleHandle* OtherBody) const
 {
-	constexpr int32 GridDimension = 9;
-	constexpr Chaos::FReal GridSize = 100.0;
 	const Chaos::FReal CellSize = GridSize / GridDimension;
 	const Chaos::FImplicitObject* LayerShape = LayerBody->GetGeometry();
 	const Chaos::FImplicitObject* OtherShape = OtherBody->GetGeometry();
 	if (!LayerShape || !OtherShape)
 	{
-		return 0;
+		return;
 	}
 
-	const Chaos::FRigidTransform3 LayerTransform = LayerBody->GetTransformPQ();
-	const Chaos::FRigidTransform3 OtherTransform = OtherBody->GetTransformPQ();
-	int32 InsideCount = 0;
+	const Chaos::FRigidTransform3 LayerTransform = LayerBody->GetTransformXR();
+	const Chaos::FRigidTransform3 OtherTransform = OtherBody->GetTransformXR();
+	const Chaos::FVec3 ProbeForce(0.0, 0.0, PerProbeForce);
+	const Chaos::FVec3 CenterOfMass = OtherBody->XCom();
+	#if CHAOS_DEBUG_DRAW
+	const bool bDrawProbes = Chaos::FDebugDrawQueue::IsDebugDrawingEnabled();
+	#endif
 
 	for (int32 X = 0; X < GridDimension; ++X)
 	{
@@ -35,21 +38,34 @@ int32 FBouyancyLayerPhysics::CountSubmergedProbes(const Chaos::FPBDRigidParticle
 		{
 			for (int32 Z = 0; Z < GridDimension; ++Z)
 			{
-				const Chaos::FVec3 WorldPoint = OtherBody->GetP() + Chaos::FVec3(
+				const Chaos::FVec3 WorldPoint = OtherBody->GetX() + Chaos::FVec3(
 					(X + 0.5) * CellSize - GridSize * 0.5,
 					(Y + 0.5) * CellSize - GridSize * 0.5,
 					(Z + 0.5) * CellSize - GridSize * 0.5);
-				if (WorldPoint.Z <= WaterSurfaceZ &&
+				const bool bSubmerged = WorldPoint.Z <= WaterSurfaceZ &&
 					LayerShape->Overlap(LayerTransform.InverseTransformPosition(WorldPoint), 0.0) &&
-					OtherShape->Overlap(OtherTransform.InverseTransformPosition(WorldPoint), 0.0))
+					OtherShape->Overlap(OtherTransform.InverseTransformPosition(WorldPoint), 0.0);
+				#if CHAOS_DEBUG_DRAW
+				if (bDrawProbes)
 				{
-					++InsideCount;
+					FColor ProbeColor = FColor::Red;
+					if (bSubmerged)
+					{
+						ProbeColor = FColor::Green;
+					}
+					Chaos::FDebugDrawQueue::GetInstance().DrawDebugPoint(WorldPoint, ProbeColor, false, 0.05f, 1, 6.0f);
+				}
+				#endif
+				if (bSubmerged)
+				{
+					// add force
+					OtherBody->AddForce(ProbeForce, true);
+					OtherBody->AddTorque(Chaos::FVec3::CrossProduct(WorldPoint - CenterOfMass, ProbeForce), true);
 				}
 			}
 		}
 	}
 
-	return InsideCount;
 }
 
 // Sets default values
@@ -119,6 +135,8 @@ void ANetworkedPhysicsBouyancyLayer::ResolvePhysicsBody()
 								BouyancyLayerPhysicsAsync->CurrentPhysicsObjectHandle = PhysicsBody;
 								BouyancyLayerPhysicsAsync->WaterSurfaceZ = BouyancyLayerMeshComponent->Bounds.GetBox().Max.Z;
 								BouyancyLayerPhysicsAsync->PerProbeForce = PerProbeForce;
+								BouyancyLayerPhysicsAsync->GridSize = FMath::Max(1.0f, GridSize);
+								BouyancyLayerPhysicsAsync->GridDimension = FMath::Max(1, GridDimension);
 							}
 						}
 					}
@@ -146,8 +164,6 @@ void FBouyancyLayerPhysics::OnContactModification_Internal(Chaos::FCollisionCont
 	}
 	
 	Chaos::FContactPairModifierParticleRange CurrentContactCandidates = Modifier.GetContacts(RigidHandle);
-	TSet<Chaos::FPBDRigidParticleHandle*> UpdatedBodies;
-	Chaos::FReal ForcePerProbe = PerProbeForce;
 
 	for (auto CurrentContactCandidate : CurrentContactCandidates)
 	{
@@ -159,32 +175,11 @@ void FBouyancyLayerPhysics::OnContactModification_Internal(Chaos::FCollisionCont
 			{
 				if (auto OtherBody = CurrentCandidate->CastToRigidParticle())
 				{
-					//Then we can do something, but we do some dynamic force on object now rather than launching it
 					if (OtherBody->IsDynamic())
 					{
 						// we convert it to probe, cause probe will not apply any force however collision still happenning so we can do something with it
 						CurrentContactCandidate.ConvertToProbe();
-						if (UpdatedBodies.Contains(OtherBody))
-						{
-							continue;
-						}
-						UpdatedBodies.Add(OtherBody);
-
-						const int32 ProbeCount = CountSubmergedProbes(RigidHandle, OtherBody);
-						if (ProbeCount > 0)
-						{
-							// Each submerged probe contributes
-							const Chaos::FReal UpwardForce = ProbeCount * ForcePerProbe;
-							const Chaos::FReal VelocityChange = UpwardForce * OtherBody->InvM() * GetDeltaTime_Internal();
-							const Chaos::FVec3 NewVelocity = OtherBody->GetV() + Chaos::FVec3(0.0, 0.0, VelocityChange);
-							const auto Pair = CurrentContactCandidate.GetParticlePair();
-							int32 OtherBodyIndex = 0;
-							if (Pair[0] != OtherBody)
-							{
-								OtherBodyIndex = 1;
-							}
-							CurrentContactCandidate.ModifyParticleVelocity(NewVelocity, OtherBodyIndex);
-						}
+						BodiesToBuoy.Add(OtherBody);
 					}
 				}
 			
@@ -201,13 +196,53 @@ void FBouyancyLayerPhysics::OnPhysicsObjectUnregistered_Internal(Chaos::FConstPh
 	if (CurrentPhysicsObjectHandle == PhysicsObject)
 	{
 		CurrentPhysicsObjectHandle = nullptr;
+		BodiesToBuoy.Reset();
+		return;
 	}
+
+	Chaos::FWritePhysicsObjectInterface_Internal WriteInterface = Chaos::FPhysicsObjectInternalInterface::GetWrite();
+	BodiesToBuoy.Remove(WriteInterface.GetRigidParticle(PhysicsObject));
+}
+
+void FBouyancyLayerPhysics::FirstPreResimStep_Internal(int32 PhysicsStep)
+{
+	BodiesToBuoy.Reset();
 }
 
 
 void FBouyancyLayerPhysics::OnPreSimulate_Internal()
 {
-	
-}	
+	if (!CurrentPhysicsObjectHandle)
+	{
+		BodiesToBuoy.Reset();
+		return;
+	}
+
+	Chaos::FWritePhysicsObjectInterface_Internal WriteInterface = Chaos::FPhysicsObjectInternalInterface::GetWrite();
+	Chaos::FPBDRigidParticleHandle* LayerBody = WriteInterface.GetRigidParticle(CurrentPhysicsObjectHandle);
+	if (!LayerBody)
+	{
+		BodiesToBuoy.Reset();
+		return;
+	}
+
+	for (Chaos::FPBDRigidParticleHandle* OtherBody : BodiesToBuoy)
+	{
+		if (OtherBody && OtherBody->IsDynamic())
+		{
+			ApplySubmergedProbeForces(LayerBody, OtherBody);
+		}
+	}
+	BodiesToBuoy.Reset();
+
+	#if CHAOS_DEBUG_DRAW
+	if (Chaos::FDebugDrawQueue::IsDebugDrawingEnabled())
+	{
+		const Chaos::FVec3 LayerPosition = LayerBody->GetX();
+		const Chaos::FVec3 SurfaceCenter(LayerPosition.X, LayerPosition.Y, WaterSurfaceZ);
+		Chaos::FDebugDrawQueue::GetInstance().DrawDebugPoint(SurfaceCenter, FColor::Cyan, false, 0.05f, 1, 12.0f);
+	}
+	#endif
+}
 
 
