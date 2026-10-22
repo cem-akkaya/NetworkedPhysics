@@ -29,7 +29,9 @@ void FBouyancyLayerPhysics::ApplySubmergedProbeForces(const Chaos::FPBDRigidPart
 
 	const Chaos::FRigidTransform3 LayerTransform = LayerBody->GetTransformXR();
 	const Chaos::FRigidTransform3 OtherTransform = OtherBody->GetTransformXR();
-	const Chaos::FVec3 ProbeForce(0.0, 0.0, PerProbeForce);
+	const Chaos::FVec3 SurfaceUp = LayerTransform.GetRotation().RotateVector(Chaos::FVec3(0.0, 0.0, 1.0));
+	// A tilted layer adds a downhill push while buoyancy keeps lifting upward.
+	const Chaos::FVec3 ProbeForce(SurfaceUp.X * PerProbeForce, SurfaceUp.Y * PerProbeForce, PerProbeForce);
 	const Chaos::FVec3 CenterOfMass = OtherBody->XCom();
 	#if CHAOS_DEBUG_DRAW
 	const bool bDrawProbes = Chaos::FDebugDrawQueue::IsDebugDrawingEnabled();
@@ -84,7 +86,13 @@ ANetworkedPhysicsBouyancyLayer::ANetworkedPhysicsBouyancyLayer()
 	BouyancyLayerCollisionComponent->SetSimulatePhysics(false);
 	BouyancyLayerCollisionComponent->SetBoxExtent(LayerDimensions);
 	BouyancyLayerCollisionComponent->SetMaxDepenetrationVelocity(NAME_None, 0.0f);
-	BouyancyLayerCollisionComponent->SetMaterial(0, LoadObject<UMaterial>(nullptr, TEXT("/Engine/ArtTools/RenderToTexture/Materials/M_RadiusDebugTranslucent.M_RadiusDebugTransLucent")));
+
+	BouyancyLayerVisualComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BouyancyLayerVisual"));
+	BouyancyLayerVisualComponent->SetupAttachment(BouyancyLayerCollisionComponent);
+	BouyancyLayerVisualComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	BouyancyLayerVisualComponent->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")));
+	BouyancyLayerVisualComponent->SetRelativeScale3D(LayerDimensions / 50.0f);
+	BouyancyLayerVisualComponent->SetMaterial(0, LoadObject<UMaterial>(nullptr, TEXT("/Engine/ArtTools/RenderToTexture/Materials/M_RadiusDebugTranslucent.M_RadiusDebugTransLucent")));
 }
 
 // Called when the game starts or when spawned
@@ -100,6 +108,7 @@ void ANetworkedPhysicsBouyancyLayer::OnConstruction(const FTransform& Transform)
 	Super::OnConstruction(Transform);
 	
 	BouyancyLayerCollisionComponent->SetBoxExtent(LayerDimensions);
+	BouyancyLayerVisualComponent->SetRelativeScale3D(LayerDimensions / 50.0f);
 }
 
 void ANetworkedPhysicsBouyancyLayer::Destroyed()

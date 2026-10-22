@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/BoxComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Chaos/SimCallbackObject.h"
 #include "Chaos/PhysicsObject.h"
 #include "Chaos/ParticleHandleFwd.h"
@@ -30,6 +31,9 @@ protected:
 
 	UPROPERTY()
 	UBoxComponent* BouyancyLayerCollisionComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bouyancy Layer")
+	UStaticMeshComponent* BouyancyLayerVisualComponent;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bouyancy Layer")
 	FVector LayerDimensions = FVector(500.0f, 500.0f, 100.0f);
