@@ -16,7 +16,10 @@
 
 void FBouyancyLayerPhysics::ApplySubmergedProbeForces(const Chaos::FPBDRigidParticleHandle* LayerBody, Chaos::FPBDRigidParticleHandle* OtherBody) const
 {
-	const Chaos::FReal CellSize = GridSize / GridDimension;
+	const Chaos::FAABB3& Bounds = OtherBody->WorldSpaceInflatedBounds();
+	const Chaos::FReal CurrentGridSize = Bounds.Extents().GetMax();
+	
+	const Chaos::FReal CellSize = CurrentGridSize / GridDimension;
 	const Chaos::FImplicitObject* LayerShape = LayerBody->GetGeometry();
 	const Chaos::FImplicitObject* OtherShape = OtherBody->GetGeometry();
 	if (!LayerShape || !OtherShape)
@@ -38,10 +41,10 @@ void FBouyancyLayerPhysics::ApplySubmergedProbeForces(const Chaos::FPBDRigidPart
 		{
 			for (int32 Z = 0; Z < GridDimension; ++Z)
 			{
-				const Chaos::FVec3 WorldPoint = OtherBody->GetX() + Chaos::FVec3(
-					(X + 0.5) * CellSize - GridSize * 0.5,
-					(Y + 0.5) * CellSize - GridSize * 0.5,
-					(Z + 0.5) * CellSize - GridSize * 0.5);
+				const Chaos::FVec3 WorldPoint = Bounds.Center() + Chaos::FVec3(
+					(X + 0.5) * CellSize - CurrentGridSize * 0.5,
+					(Y + 0.5) * CellSize - CurrentGridSize * 0.5,
+					(Z + 0.5) * CellSize - CurrentGridSize * 0.5);
 				const bool bSubmerged = WorldPoint.Z <= WaterSurfaceZ &&
 					LayerShape->Overlap(LayerTransform.InverseTransformPosition(WorldPoint), 0.0) &&
 					OtherShape->Overlap(OtherTransform.InverseTransformPosition(WorldPoint), 0.0);
@@ -74,15 +77,14 @@ ANetworkedPhysicsBouyancyLayer::ANetworkedPhysicsBouyancyLayer()
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 	
-	BouyancyLayerMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BouyancyLayerMeshComponent"));
-	SetRootComponent(BouyancyLayerMeshComponent);
-	BouyancyLayerMeshComponent->SetCollisionProfileName(TEXT("BlockAllDynamic"));
-	BouyancyLayerMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	BouyancyLayerMeshComponent->SetSimulatePhysics(false);
-	BouyancyLayerMeshComponent->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder")));
-	BouyancyLayerMeshComponent->SetWorldScale3D(FVector(50.0f,50.0f,25.0f));
-	BouyancyLayerMeshComponent->SetMaxDepenetrationVelocity(NAME_None, 0.0f);
-	BouyancyLayerMeshComponent->SetMaterial(0, LoadObject<UMaterial>(nullptr, TEXT("/Engine/ArtTools/RenderToTexture/Materials/M_RadiusDebugTranslucent.M_RadiusDebugTransLucent")));
+	BouyancyLayerCollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BouyancyLayer"));
+	SetRootComponent(BouyancyLayerCollisionComponent);
+	BouyancyLayerCollisionComponent->SetCollisionProfileName(TEXT("BlockAllDynamic"));
+	BouyancyLayerCollisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	BouyancyLayerCollisionComponent->SetSimulatePhysics(false);
+	BouyancyLayerCollisionComponent->SetBoxExtent(LayerDimensions);
+	BouyancyLayerCollisionComponent->SetMaxDepenetrationVelocity(NAME_None, 0.0f);
+	BouyancyLayerCollisionComponent->SetMaterial(0, LoadObject<UMaterial>(nullptr, TEXT("/Engine/ArtTools/RenderToTexture/Materials/M_RadiusDebugTranslucent.M_RadiusDebugTransLucent")));
 }
 
 // Called when the game starts or when spawned
@@ -91,6 +93,13 @@ void ANetworkedPhysicsBouyancyLayer::BeginPlay()
 	Super::BeginPlay();
 	
 	ResolvePhysicsBody();
+}
+
+void ANetworkedPhysicsBouyancyLayer::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+	
+	BouyancyLayerCollisionComponent->SetBoxExtent(LayerDimensions);
 }
 
 void ANetworkedPhysicsBouyancyLayer::Destroyed()
@@ -115,13 +124,13 @@ void ANetworkedPhysicsBouyancyLayer::Destroyed()
 
 void ANetworkedPhysicsBouyancyLayer::ResolvePhysicsBody()
 {
-	if (auto CurrentBody = BouyancyLayerMeshComponent->GetBodyInstance())
+	if (auto CurrentBody = BouyancyLayerCollisionComponent->GetBodyInstance())
 	{
 		if (CurrentBody->IsValidBodyInstance())
 		{
 			CurrentBody->SetUpdateKinematicFromSimulation(true);
 							
-			if (Chaos::FPhysicsObject* PhysicsBody = BouyancyLayerMeshComponent->GetPhysicsObjectByName(NAME_None))
+			if (Chaos::FPhysicsObject* PhysicsBody = BouyancyLayerCollisionComponent->GetPhysicsObjectByName(NAME_None))
 			{
 				if (UWorld* World = GetWorld())
 				{
@@ -132,8 +141,9 @@ void ANetworkedPhysicsBouyancyLayer::ResolvePhysicsBody()
 							BouyancyLayerPhysicsAsync = Solver->CreateAndRegisterSimCallbackObject_External<FBouyancyLayerPhysics>();
 							if (BouyancyLayerPhysicsAsync)
 							{
+								auto GridSize = CurrentBody->GetBodyBounds().GetExtent().GetMax();
 								BouyancyLayerPhysicsAsync->CurrentPhysicsObjectHandle = PhysicsBody;
-								BouyancyLayerPhysicsAsync->WaterSurfaceZ = BouyancyLayerMeshComponent->Bounds.GetBox().Max.Z;
+								BouyancyLayerPhysicsAsync->WaterSurfaceZ = BouyancyLayerCollisionComponent->Bounds.GetBox().Max.Z;
 								BouyancyLayerPhysicsAsync->PerProbeForce = PerProbeForce;
 								BouyancyLayerPhysicsAsync->GridSize = FMath::Max(1.0f, GridSize);
 								BouyancyLayerPhysicsAsync->GridDimension = FMath::Max(1, GridDimension);

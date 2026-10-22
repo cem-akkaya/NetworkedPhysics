@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Components/BoxComponent.h"
 #include "Chaos/SimCallbackObject.h"
 #include "Chaos/PhysicsObject.h"
 #include "Chaos/ParticleHandleFwd.h"
@@ -17,25 +18,24 @@ class NETWORKEDPHYSICS_API ANetworkedPhysicsBouyancyLayer : public AActor
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this actor's properties
 	ANetworkedPhysicsBouyancyLayer();
 
 	virtual void Destroyed() override;
+	virtual void OnConstruction(const FTransform& Transform) override;
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	
 	void ResolvePhysicsBody();
 
 	UPROPERTY()
-	UStaticMeshComponent* BouyancyLayerMeshComponent;
+	UBoxComponent* BouyancyLayerCollisionComponent;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bouyancy Layer")
+	FVector LayerDimensions = FVector(500.0f, 500.0f, 100.0f);
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bouyancy Layer")
 	float PerProbeForce = 100.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bouyancy Layer|Probes", meta = (ClampMin = "1.0"))
-	float GridSize = 100.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bouyancy Layer|Probes", meta = (ClampMin = "1", DisplayName = "Probes Per Axis"))
 	int32 GridDimension = 9;
@@ -62,6 +62,7 @@ class FBouyancyLayerPhysics : public Chaos::TSimCallbackObject<FBouyancyLayerPhy
 	float PerProbeForce = 0.0f;
 	float GridSize = 100.0f;
 	int32 GridDimension = 9;
+	
 	// Contacts found after integration are applied as forces on the next physics step.
 	TSet<Chaos::FPBDRigidParticleHandle*> BodiesToBuoy;
 	
