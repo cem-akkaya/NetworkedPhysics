@@ -163,9 +163,9 @@ void FPhysicsTetherPhysics::OnPreSimulate_Internal()
 		JointSettings.LinearMotionTypes = {Chaos::EJointMotionType::Free, Chaos::EJointMotionType::Free, Chaos::EJointMotionType::Free};
 		JointSettings.bLinearPositionDriveEnabled = {true, true, true};
 		JointSettings.LinearDrivePositionTarget = TetherPair[1]->GetR().Inverse().RotateVector((TetherPair[0]->GetX() - TetherPair[1]->GetX()).GetSafeNormal() * TetherRestLength);
-		JointSettings.LinearDriveStiffness = Chaos::FVec3(2000.0);
-		JointSettings.LinearDriveDamping = Chaos::FVec3(20.0);
-		JointSettings.LinearDriveMaxForce = Chaos::FVec3(10000000.0);
+		JointSettings.LinearDriveStiffness = Chaos::FVec3(10.0);
+		JointSettings.LinearDriveDamping = Chaos::FVec3(1.0);
+		JointSettings.LinearDriveMaxForce = Chaos::FVec3(100.0);
 		
 		TetherConstraintHandle = CurrentSolver->GetEvolution()->CreateJointConstraint(TetherPair, JointSettings);
 	}

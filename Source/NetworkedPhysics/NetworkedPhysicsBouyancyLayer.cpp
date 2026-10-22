@@ -53,7 +53,7 @@ void FBouyancyLayerPhysics::ApplySubmergedProbeForces(const Chaos::FPBDRigidPart
 					{
 						ProbeColor = FColor::Green;
 					}
-					Chaos::FDebugDrawQueue::GetInstance().DrawDebugPoint(WorldPoint, ProbeColor, false, 0.05f, 1, 6.0f);
+					Chaos::FDebugDrawQueue::GetInstance().DrawDebugPoint(WorldPoint, ProbeColor, false, 0.05f, 1, 2.0f);
 				}
 				#endif
 				if (bSubmerged)

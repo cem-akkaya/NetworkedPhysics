@@ -90,6 +90,22 @@ This component implements the manual asynchronous networked physics logic detail
 - **Tutorial Implementation**: Provides a clean, documented implementation of `Chaos::TSimCallbackObject` and `FNetworkPhysicsPayload`.
 - **Synchronization Logic**: Demonstrates reliable input and state replication across the network with client-side prediction and server reconciliation.
 
+### 5. Gameplay Physics Experiments (`Lvl_Experiments`)
+
+I use [Lvl_Experiments](Content/ThirdPerson/Lvl_Experiments.umap) to build small physics exercises from ideas in Epic's [Networked Physics Gameplay Tutorial](https://dev.epicgames.com/community/learning/tutorials/3dKz/unreal-engine-networked-physics-gameplay-tutorial). The point is to work through Chaos physics-thread callbacks, body handles, contact pairs, and forces directly, then test those ideas with more involved objects.
+
+The [launch pad](Source/NetworkedPhysics/NetworkedPhysicsLaunchPad.cpp) is a contact-detection exercise: its Chaos contact-modification callback finds contacts involving the pad, identifies the other dynamic body, and changes that body's velocity on initial contact. The [buoyancy layer](Source/NetworkedPhysics/NetworkedPhysicsBouyancyLayer.cpp) builds on the same callback. It converts contacts with dynamic bodies to probes, so they still identify bodies entering the layer without the usual blocking response. It then samples those bodies and applies buoyancy during the next physics pre-simulation step.
+
+#### Probe-Based Buoyancy Without Pontoons
+
+For each contacted body, the buoyancy layer places a 3D grid of sample points around it. A point contributes lift only when it is below the water-surface height and inside **both** the layer's collision shape and the body's collision shape. Each accepted point adds upward force and torque around the body's center of mass, so an unevenly submerged object can tilt as well as rise. `GridSize`, `Probes Per Axis`, and `PerProbeForce` are editable on the actor; the physics callback receives those values when it is created.
+
+This is useful for complex collision shapes because the submerged samples follow the shape's occupied space automatically, without hand-placing spherical pontoons. The count of accepted probes is an **approximation of displaced volume** at the grid's resolution, rather than an exact mesh intersection. Compared with a small pontoon setup, a denser grid can capture more of an irregular object's submerged shape and where its lift acts. The current exercise gives each accepted probe the same force, so changing probe density also changes total lift; it does not yet scale force by each grid cell's volume.
+
+<img src="Source/BuoyancyProbes.gif" alt="Probe-based buoyancy experiment showing sampled points around floating objects" width="100%"/>
+
+With Chaos debug drawing enabled, green points are submerged probes, red points are rejected probes, and the cyan point marks the layer's water-surface height.
+
 ---
 <img src="https://raw.githubusercontent.com/cem-akkaya/NetworkedPhysics/refs/heads/master/Source/1.gif" alt="networked-physics-splash" width="100%"/>
 
