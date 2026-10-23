@@ -45,6 +45,10 @@ public class NetworkedPhysics : ModuleRules
 		});
 
 		SetupIrisSupport(Target);
+		if (Target.bBuildEditor)
+		{
+			PrivateDependencyModuleNames.Add("AssetRegistry");
+		}
 		
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

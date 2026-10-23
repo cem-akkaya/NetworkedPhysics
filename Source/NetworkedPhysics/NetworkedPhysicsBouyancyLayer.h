@@ -9,6 +9,7 @@
 #include "Chaos/SimCallbackObject.h"
 #include "Chaos/PhysicsObject.h"
 #include "Chaos/ParticleHandleFwd.h"
+#include "NetworkedPhysicsWaterGridData.h"
 #include "NetworkedPhysicsBouyancyLayer.generated.h"
 
 class FBouyancyLayerPhysics;
@@ -21,8 +22,30 @@ class NETWORKEDPHYSICS_API ANetworkedPhysicsBouyancyLayer : public AActor
 public:
 	ANetworkedPhysicsBouyancyLayer();
 
+	UFUNCTION(CallInEditor, Category = "Bouyancy Layer|Fluid")
+	void BakeWaterGrid();
+
 	virtual void Destroyed() override;
 	virtual void OnConstruction(const FTransform& Transform) override;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,  Category = "Bouyancy Layer|Fluid")
+	FVector LayerDimensions = FVector(500.0f, 500.0f, 100.0f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bouyancy Layer|Fluid", meta = (ClampMin = "1", DisplayName = "Probes Per Axis"))
+	int32 LayerGridDimension = 24;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bouyancy Layer|Fluid")
+	TObjectPtr<UNetworkedPhysicsWaterGridData> WaterGridData = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bouyancy Layer|Fluid")
+	float FluidDepth = 30.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bouyancy Layer|Probes")
+	float PerProbeForce = 100.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bouyancy Layer|Probes", meta = (ClampMin = "1", DisplayName = "Probes Per Axis"))
+	int32 ForceGridDimension = 9;
+
 
 protected:
 	virtual void BeginPlay() override;
@@ -34,16 +57,7 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bouyancy Layer")
 	UStaticMeshComponent* BouyancyLayerVisualComponent;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bouyancy Layer")
-	FVector LayerDimensions = FVector(500.0f, 500.0f, 100.0f);
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bouyancy Layer")
-	float PerProbeForce = 100.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bouyancy Layer|Probes", meta = (ClampMin = "1", DisplayName = "Probes Per Axis"))
-	int32 GridDimension = 9;
-	
 	FBouyancyLayerPhysics* BouyancyLayerPhysicsAsync = nullptr;
 };
 
@@ -62,10 +76,12 @@ class FBouyancyLayerPhysics : public Chaos::TSimCallbackObject<FBouyancyLayerPhy
 	friend class ANetworkedPhysicsBouyancyLayer;
 	
 	Chaos::FConstPhysicsObjectHandle CurrentPhysicsObjectHandle = nullptr;
-	float WaterSurfaceZ = 0.0f;
 	float PerProbeForce = 0.0f;
 	float GridSize = 100.0f;
-	int32 GridDimension = 9;
+	int32 ForceGridDimension = 9;
+	FVector LayerDimensions = FVector::ZeroVector;
+	int32 LayerGridDimension = 0;
+	TArray<FBouyancyWaterGridCell> WaterGridCells;
 	
 	// Contacts found after integration are applied as forces on the next physics step.
 	TSet<Chaos::FPBDRigidParticleHandle*> BodiesToBuoy;
