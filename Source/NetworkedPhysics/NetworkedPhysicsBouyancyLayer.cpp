@@ -47,10 +47,9 @@ void FBouyancyLayerPhysics::ApplySubmergedProbeForces(const Chaos::FPBDRigidPart
 	const Chaos::FRigidTransform3 OtherTransform = OtherBody->GetTransformXR();
 	const Chaos::FReal WaterCellWidth = LayerDimensions.X * 2.0 / LayerGridDimension;
 	const Chaos::FReal WaterCellLength = LayerDimensions.Y * 2.0 / LayerGridDimension;
-	const Chaos::FVec3 SurfaceUp = LayerTransform.GetRotation().RotateVector(Chaos::FVec3(0.0, 0.0, 1.0));
-	// A tilted layer adds a downhill push while buoyancy keeps lifting upward.
-	const Chaos::FVec3 ProbeForce(SurfaceUp.X * PerProbeForce, SurfaceUp.Y * PerProbeForce, PerProbeForce);
 	const Chaos::FVec3 CenterOfMass = OtherBody->XCom();
+	Chaos::FVec3 TotalForce = Chaos::FVec3::ZeroVector;
+	Chaos::FVec3 TotalTorque = Chaos::FVec3::ZeroVector;
 	#if CHAOS_DEBUG_DRAW
 	const bool bDrawProbes = Chaos::FDebugDrawQueue::IsDebugDrawingEnabled();
 	#endif
@@ -69,6 +68,7 @@ void FBouyancyLayerPhysics::ApplySubmergedProbeForces(const Chaos::FPBDRigidPart
 				const int32 WaterX = FMath::FloorToInt((LayerPoint.X + LayerDimensions.X) / WaterCellWidth);
 				const int32 WaterY = FMath::FloorToInt((LayerPoint.Y + LayerDimensions.Y) / WaterCellLength);
 				Chaos::FReal SubmergedDepth = 0.0;
+				Chaos::FVec3 ProbeNormal = Chaos::FVec3::ZeroVector;
 				if (WaterX >= 0 && WaterX < LayerGridDimension && WaterY >= 0 && WaterY < LayerGridDimension)
 				{
 					const FBouyancyWaterGridCell& WaterCell = WaterGridCells[WaterX * LayerGridDimension + WaterY];
@@ -78,6 +78,7 @@ void FBouyancyLayerPhysics::ApplySubmergedProbeForces(const Chaos::FPBDRigidPart
 					{
 						// Deeper probes receive more of this cell's buoyancy force.
 						SubmergedDepth = FMath::Clamp((WaterTop - LayerPoint.Z) / (WaterTop - WaterBottom), 0.0, 1.0);
+						ProbeNormal = LayerTransform.GetRotation().RotateVector(WaterCell.LocalSurfaceNormal);
 					}
 				}
 				const bool bSubmerged = SubmergedDepth > 0.0 &&
@@ -86,23 +87,30 @@ void FBouyancyLayerPhysics::ApplySubmergedProbeForces(const Chaos::FPBDRigidPart
 				#if CHAOS_DEBUG_DRAW
 				if (bDrawProbes)
 				{
-					FColor ProbeColor = FColor::Red;
+					FColor ProbeColor(80, 0, 0);
 					if (bSubmerged)
 					{
 						ProbeColor = FColor::Green;
 					}
-					Chaos::FDebugDrawQueue::GetInstance().DrawDebugPoint(WorldPoint, ProbeColor, false, 0.05f, 1, 2.0f);
+					Chaos::FDebugDrawQueue::GetInstance().DrawDebugPoint(WorldPoint, ProbeColor, false, 0.05f, 1, 8.0f);
 				}
 				#endif
 				if (bSubmerged)
 				{
-					// add force
-					const Chaos::FVec3 CurrentProbeForce = ProbeForce * SubmergedDepth;
-					OtherBody->AddForce(CurrentProbeForce, true);
-					OtherBody->AddTorque(Chaos::FVec3::CrossProduct(WorldPoint - CenterOfMass, CurrentProbeForce), true);
+					const Chaos::FVec3 CurrentProbeForce = ProbeNormal * PerProbeForce * SubmergedDepth;
+					TotalForce += CurrentProbeForce;
+					TotalTorque += Chaos::FVec3::CrossProduct(WorldPoint - CenterOfMass, CurrentProbeForce);
 				}
 			}
 		}
+	}
+
+	const Chaos::FReal ForceMagnitude = TotalForce.Size();
+	if (ForceMagnitude > UE_SMALL_NUMBER)
+	{
+		const Chaos::FReal ForceScale = FMath::Min(1.0, MaxForcePerObject / ForceMagnitude);
+		OtherBody->AddForce(TotalForce * ForceScale, true);
+		OtherBody->AddTorque(TotalTorque * ForceScale, true);
 	}
 
 }
@@ -142,6 +150,9 @@ void ANetworkedPhysicsBouyancyLayer::BakeWaterGrid()
 	GridData->Cells.Reset();
 	GridData->Cells.SetNum(CellsPerAxis * CellsPerAxis);
 	const FTransform LayerTransform = BouyancyLayerCollisionComponent->GetComponentTransform();
+	const float TopZ = LayerDimensions.Z;
+	const FVector BoxUp = LayerTransform.TransformVectorNoScale(FVector::UpVector).GetSafeNormal();
+	const FQuat BoxTilt = FQuat::FindBetweenNormals(FVector::UpVector, BoxUp);
 	FCollisionObjectQueryParams ObjectParams;
 	ObjectParams.AddObjectTypesToQuery(ECC_WorldStatic);
 	FCollisionQueryParams QueryParams;
@@ -159,15 +170,14 @@ void ANetworkedPhysicsBouyancyLayer::BakeWaterGrid()
 			if (GetWorld()->LineTraceSingleByObjectType(Hit, TraceStart, TraceEnd, ObjectParams, QueryParams))
 			{
 				const float BottomZ = LayerTransform.InverseTransformPosition(Hit.ImpactPoint).Z;
-				const float WaterHeight = FluidDepth;
-				const float TopZ = BottomZ + WaterHeight;
-				// A rock near the top leaves no room for a full water column.
-				if (WaterHeight > UE_SMALL_NUMBER && BottomZ >= -LayerDimensions.Z && TopZ <= LayerDimensions.Z)
+				const float WaterHeight = TopZ - BottomZ;
+				if (WaterHeight > UE_SMALL_NUMBER && BottomZ >= -LayerDimensions.Z)
 				{
 					FBouyancyWaterGridCell& Cell = GridData->Cells[X * CellsPerAxis + Y];
 					Cell.LocalCenter = FVector(LocalX, LocalY, BottomZ + WaterHeight * 0.5f);
 					Cell.LocalExtent = FVector(CellSize.X * 0.5f, CellSize.Y * 0.5f, WaterHeight * 0.5f);
-					Cell.LocalSurfaceNormal = LayerTransform.InverseTransformVectorNoScale(Hit.ImpactNormal).GetSafeNormal();
+					const FVector WaterNormal = BoxTilt.RotateVector(Hit.ImpactNormal).GetSafeNormal();
+					Cell.LocalSurfaceNormal = LayerTransform.InverseTransformVectorNoScale(WaterNormal).GetSafeNormal();
 					Cell.bValid = true;
 				}
 			}
@@ -191,11 +201,10 @@ void ANetworkedPhysicsBouyancyLayer::BakeWaterGrid()
 			continue;
 		}
 
-		const FVector WorldExtent(
-			Cell.LocalExtent.X * FMath::Abs(LayerScale.X),
-			Cell.LocalExtent.Y * FMath::Abs(LayerScale.Y),
-			Cell.LocalExtent.Z * FMath::Abs(LayerScale.Z));
-		DrawDebugBox(GetWorld(), LayerTransform.TransformPosition(Cell.LocalCenter), WorldExtent, LayerTransform.GetRotation(), FColor::Cyan, false, 5.0f, 0, 1.0f);
+		const float WorldHeight = Cell.LocalExtent.Z * 2.0f * FMath::Abs(LayerScale.Z);
+		const FVector ArrowStart = LayerTransform.TransformPosition(Cell.LocalCenter - FVector(0.0f, 0.0f, Cell.LocalExtent.Z));
+		const FVector WorldNormal = LayerTransform.TransformVectorNoScale(Cell.LocalSurfaceNormal).GetSafeNormal();
+		DrawDebugDirectionalArrow(GetWorld(), ArrowStart, ArrowStart + WorldNormal * WorldHeight, WorldHeight * 0.2f, FColor::Cyan, false, 5.0f, 0, 1.0f);
 	}
 #endif
 }
@@ -283,6 +292,7 @@ void ANetworkedPhysicsBouyancyLayer::ResolvePhysicsBody()
 								auto GridSize = CurrentBody->GetBodyBounds().GetExtent().GetMax();
 								BouyancyLayerPhysicsAsync->CurrentPhysicsObjectHandle = PhysicsBody;
 								BouyancyLayerPhysicsAsync->PerProbeForce = PerProbeForce;
+								BouyancyLayerPhysicsAsync->MaxForcePerObject = FMath::Max(0.0f, MaxForcePerObject);
 								BouyancyLayerPhysicsAsync->GridSize = FMath::Max(1.0f, GridSize);
 								BouyancyLayerPhysicsAsync->ForceGridDimension = FMath::Max(1, ForceGridDimension);
 								BouyancyLayerPhysicsAsync->LayerDimensions = WaterGridData->LayerDimensions;
@@ -396,5 +406,3 @@ void FBouyancyLayerPhysics::OnPreSimulate_Internal()
 	}
 	#endif
 }
-
-

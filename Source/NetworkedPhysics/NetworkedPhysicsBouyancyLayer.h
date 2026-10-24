@@ -37,11 +37,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bouyancy Layer|Fluid")
 	TObjectPtr<UNetworkedPhysicsWaterGridData> WaterGridData = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bouyancy Layer|Fluid")
-	float FluidDepth = 30.0f;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bouyancy Layer|Probes")
 	float PerProbeForce = 100.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bouyancy Layer|Probes", meta = (ClampMin = "0.0"))
+	float MaxForcePerObject = 1000.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bouyancy Layer|Probes", meta = (ClampMin = "1", DisplayName = "Probes Per Axis"))
 	int32 ForceGridDimension = 9;
@@ -77,6 +77,7 @@ class FBouyancyLayerPhysics : public Chaos::TSimCallbackObject<FBouyancyLayerPhy
 	
 	Chaos::FConstPhysicsObjectHandle CurrentPhysicsObjectHandle = nullptr;
 	float PerProbeForce = 0.0f;
+	float MaxForcePerObject = 0.0f;
 	float GridSize = 100.0f;
 	int32 ForceGridDimension = 9;
 	FVector LayerDimensions = FVector::ZeroVector;
